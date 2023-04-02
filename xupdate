@@ -82,7 +82,8 @@ function update_version() {
 	latest_version="$("${XBPS_DISTDIR}/xbps-src" $flag_H update-check "${pkgname}" \
 		| grep -e '->' \
 		| tail -n1 \
-		| sed -e 's/.*-\(.*\)/\1/')"
+		| sed -e "s/.* -> ${pkgname}-\(.*\)/\1/" \
+		| tr - .)"
 
 	[[ -z "${latest_version}" ]] && return
 
