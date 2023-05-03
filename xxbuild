@@ -1,0 +1,187 @@
+#!/bin/sh
+# xxbuild [flags] [pkgs..] - build packages for a pre-defined set of archs
+# set NO_COLUMN and/or NO_COLOR for easier-to-parse output
+
+: "${XXBUILD_ARCHS:="x86_64 x86_64-musl i686 aarch64-musl aarch64 armv7l-musl armv7l armv6l-musl armv6l"}"
+: "${XBPS_HOSTDIR:="$HOME/.cache/xxtools/hostdir"}"
+: "${XBPS_MASTERDIR:="$(xdistdir)/masterdir.xxtools"}"
+: "${XXBUILD_HOSTARCH:="$(xbps-uhelper arch || uname -m)"}"
+
+if [ -z "$NO_COLUMN" ] && command -v column >/dev/null; then
+	COLUMN="column -ts:"
+else
+	COLUMN="cat"
+fi
+
+cd "$(xdistdir)" || exit 1
+
+text_bold() {
+	[ -z "$NO_COLOR" ] && printf '\033[1m%s\033[m' "$@" || printf "$@"
+}
+text_red() {
+	[ -z "$NO_COLOR" ] && printf '\033[31m%s\033[m' "$@" || printf "$@"
+}
+text_green() {
+	[ -z "$NO_COLOR" ] && printf '\033[32m%s\033[m' "$@" || printf "$@"
+}
+text_yellow() {
+	[ -z "$NO_COLOR" ] && printf '\033[33m%s\033[m' "$@" || printf "$@"
+}
+
+target_arch_can_run_natively() {
+	#TODO: ppc
+	target_arch="$1"
+	host_arch="$(uname -m)"
+	case "$host_arch" in
+		x86_64)
+			case "$target_arch" in
+				i686*) return 0 ;;
+				x86_64*) return 0 ;;
+			esac
+			;;
+		aarch64)
+			case "$target_arch" in
+				armv7*) return 0 ;;
+				aarch64*) return 0 ;;
+			esac
+			;;
+	esac
+	return 1
+}
+
+_xbps_src() {
+	(
+		set -x
+		#shellcheck disable=SC2086
+		./xbps-src $xbps_src_flags "$@"
+	)
+}
+
+summary="$(printf '\n%s\n' "$(text_bold SUMMARY)")"
+if [ "$COLUMN" != "cat" ]; then
+	summary="$(printf '%s\n' "$summary" "$(text_bold pkg:host:target:cross:result)")"
+fi
+append_summary() {
+	pkg="$1"
+	host_arch="$2"
+	target_arch="$3"
+	cross="$4"
+	result="$5"
+	if [ "$COLUMN" != "cat" ]; then
+		summary="$(printf '%s\n' "$summary" "${pkg}:${host_arch}:${target_arch}:${cross}:${result}")"
+	else
+		summary="$(printf '%s\n' "$summary" "pkg:${pkg} host:${host_arch} target:${target_arch} cross:${cross} result:${result}")"
+	fi
+}
+
+xbps_src_flags=
+xxbuild_force=
+xxbuild_keep_going=
+for arg; do
+	case "$arg" in
+		-f) # clean binpkgs before build
+			xxbuild_force=y
+			;;
+		-k) # make build failure non-fatal
+			xxbuild_keep_going=y
+			shift
+			continue
+			;;
+		-*) : ;;
+		*) break ;;
+	esac
+	xbps_src_flags="$xbps_src_flags $arg"
+	shift
+done
+
+if [ "$#" = "0" ]; then
+	# if no packages are given, build changed templates commited on this branch
+	rm -f /tmp/templates
+	common/travis/changed_templates.sh &&
+		set -- $(cat /tmp/templates)
+fi
+
+# ensure all templates exist
+fail=
+pkgs=
+for pkg; do
+	if [ -f "srcpkgs/$pkg/template" ]; then
+		t="srcpkgs/$pkg/template"
+	elif [ -f "$pkg/template" ]; then
+		t="$pkg/template"
+	elif [ -f "$pkg" ]; then
+		t="$pkg"
+	else
+		printf 'FAIL: no template found for: %s\n' "$pkg" >&2
+		fail=y
+		continue
+	fi
+	pkgs="$pkgs $(printf '%s' "$t" | cut -d'/' -f2)"
+done
+[ -z "$fail" ] || exit 1
+[ -n "$pkgs" ] || exit 1
+
+#shellcheck disable=SC2086
+printf 'Building: %s\n' $pkgs
+
+mkdir -p "$XBPS_HOSTDIR" "$XBPS_MASTERDIR"
+export XBPS_HOSTDIR
+export XBPS_MASTERDIR
+
+# clean binpkgs, to not spoil the result by reusing prebuilt packages
+if [ -n "$xxbuild_force" ]; then
+	rm -rf "$XBPS_HOSTDIR/binpkgs"
+fi
+
+bailout=
+for target_arch in $XXBUILD_ARCHS; do
+
+	if target_arch_can_run_natively "$target_arch"; then
+		cross=n
+		master_arch="$target_arch"
+		xbps_src_cross_flags=
+	else
+		cross=y
+		master_arch="$XXBUILD_HOSTARCH"
+		xbps_src_cross_flags="-a $target_arch"
+	fi
+
+	# masterdir is not fully populated
+	if [ ! -s "$XBPS_MASTERDIR/.xbps_chroot_init" ]; then
+		rm -rf "$XBPS_MASTERDIR"
+	# ensure native build if possible
+	elif [ "$(cat "$XBPS_MASTERDIR/.xbps_chroot_init" 2>/dev/null)" != "$master_arch" ]; then
+		rm -rf "$XBPS_MASTERDIR"
+	fi
+
+	_xbps_src zap
+	_xbps_src binary-bootstrap "$master_arch"
+
+	# mimic xbulk, but check exit code to not fail on broken/nocross
+	# `xbulk $xbps_src_flags -f $xbps_src_cross_flags $(./xbps-src sort-dependencies $@)`
+	for pkg in $(./xbps-src sort-dependencies "$pkgs"); do
+		_xbps_src "$xbps_src_cross_flags" pkg "$pkg"
+		ret=$?
+
+		result=
+		case "$ret" in
+			0)
+				result="$(text_green OK)"
+				;;
+			2) # nocross, broken or no match in `archs=`
+				result="$(text_yellow SKIPPED)"
+				;;
+			*)
+				result="$(text_red FAILED)"
+				[ -n "$xxbuild_keep_going" ] || bailout=y
+				;;
+		esac
+		append_summary "$pkg" "$master_arch" "$target_arch" "$cross" "$result"
+
+		[ -z "$bailout" ] || break
+	done
+	[ -z "$bailout" ] || break
+done
+
+echo "$summary" | $COLUMN
+exit $ret
