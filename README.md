@@ -1,123 +1,125 @@
 # `xtools`
 
-XTOOLS(1)                   General Commands Manual                  XTOOLS(1)
+## General Commands Manual
 
-NAME
-     xtools – A collection of small utilities for use with XBPS
+### NAME
 
-COMMANDS
-     xbarf
+xtools – A collection of small utilities for use with XBPS
+
+### COMMANDS
+
+`xbarf`
         – Display build logs of last build
 
-     xbuildbarf [arch]
+`xbuildbarf [arch]`
         – Spy on current buildbot output
 
-     xbulk [-n] [-k] [xbps-src flags] pkgs ...
+`xbulk [-n] [-k] [xbps-src flags] pkgs ...`
         – simple XBPS bulk builder
           -n  dry-run mode
           -k  keep going on errors
 
-     xbump pkgname [git commit options]
+`xbump pkgname [git commit options]`
         – git commit a new package or package update
 
-     xchangelog template | pkgname
+`xchangelog template | pkgname`
         – open package changelog
 
-     xcheckmypkgs [email]
+`xcheckmypkgs [email]`
         – check your packages for updates
 
-     xcheckrestart [-v]
+`xcheckrestart [-v]`
         – list programs using outdated libraries
           -v  verbose mode, also print the library names
 
-     xchroot directory [command ...]
+`xchroot directory [command ...]`
         – chroot into a Void (or other Linux) installation
 
-     xclash
+`xclash`
         – detect file conflicts between XBPS packages
 
-     xdbg pkgs ...
+`xdbg pkgs ...`
         – list debugging packages for pkgs and recursive dependencies
 
-     xdiff [-u | -l] [basedir]
+`xdiff [-u | -l] [basedir]`
         – merge/diff/list XBPS .new-* files
           -l  list .new files
           -u  print unified diffs
 
-     xdistdir
+`xdistdir`
         – figure out XBPS_DISTDIR
 
-     xdowngrade pkgfiles.xbps ...
+`xdowngrade pkgfiles.xbps ...`
         – install XBPS package directly from .xbps file
 
-     xetcchanges
+`xetcchanges``
         – show diff of /etc against binary packages
 
-     xgensum [-f] [-c] [-i] [-H hostdir] template
+`xgensum [-f] [-c] [-i] [-H hostdir] template`
         – update SHA256 sum in templates
           -f  force (re-)download of distfiles
           -c  use content checksum
           -i  replace checksum in-place
           -H  absolute path to hostdir
 
-     xgrep pattern pkgs ...
+`xgrep pattern pkgs ...`
         – search files limited to XBPS package contents
 
-     xhog
+`hog`
         – list installed XBPS packages ordered by size
 
-     xi pkgs ...
+`xi pkgs ...`
         – like ‘xbps-install -S’, but take cwd repo and sudo/su into account
 
-     xilog [pattern]
+`xilog [pattern]`
         – list installed packages by install-date
 
-     xlg pkg
+`xlg pkg`
         – open short commit log for XBPS template
 
-     xlint template | pkgname | :pkgname | :
+`xlint template | pkgname | :pkgname | :`
         – scan XBPS template for common mistakes
         - use ‘:pkgname’ to lint template as staged in the git index
         - use ‘:’ to lint all templates staged in the git index
 
-     xlocate -g | -S | pattern
+`xlocate -g | -S | pattern`
         – locate files in all XBPS packages
           -g  Update a git based xlocate database, useful for local
               repositories
           -S  Sync with the official git based xlocate database, which is
               recommended before using the tool
 
-     xlog pkg
+`xlog pkg`
         – open commit log for XBPS template
 
-     xls pkg ...
+`xls pkg ...`
         – list files contained in pkg (including binpkgs)
 
-     xmandoc manpage
+`xmandoc manpage`
         – read manpage of possibly not installed package
 
-     xmksv [-l] [newsvdir ...]
+`xmksv [-l] [newsvdir ...]`
         – create new runit service templates. Also creates log service if -l
         is passed.
 
-     xmypkgs [email]
+`xmypkgs [email]`
         – list all pkgs maintained by you
 
-     xnew [-a] pkg [subpkgs ...]
+`xnew [-a] pkg [subpkgs ...]`
         – create XBPS template
           -a  append subpkgs to existing pkg
 
-     xnodev
+`xnodev`
         – list not installed -devel packages for installed packages
 
-     xoptdiff [-q] [pkgs ...]
+`xoptdiff [-q] [pkgs ...]`
         – show template options which differ from binary package
           -q  quiet mode, show package names only
 
-     xpcdeps pcfile ...
+`xpcdeps pcfile ...`
         – finds package matching the Requires: section of pkg-config files
 
-     xpkg [-amOHDvV] [-r rootdir] [-R repo]
+`xpkg [-amOHDvV] [-r rootdir] [-R repo]`
         – convenient package lister
           -a  list all packages (default: only installed)
           -m  list manual packages
@@ -132,7 +134,7 @@ COMMANDS
           -R repo
               consider only packages from repo
 
-     xpkgdiff [-Sfrxt] [-a arch] [-R url] [-c file] [-p prop,...] pkg
+`xpkgdiff [-Sfrxt] [-a arch] [-R url] [-c file] [-p prop,...] pkg`
         – compare a package in the repositories to the locally-built version
         - run from within a void-packages checkout
         - set DIFF to change the diff program used
@@ -151,37 +153,37 @@ COMMANDS
           -p prop,...
               compare properties of the package
 
-     xpstree
+`xpstree`
         – display tree view of xbps-src processes
 
-     xq [-R] pkg ...
+`xq [-R] pkg ...`
         – query information about XBPS package
           -R  query remote repos
 
-     xrecent [repourl | arch]
+`xrecent [repourl | arch]`
         – list packages in repo ordered by build date
 
-     xrevbump message templates ... [-- git commit options]
+`xrevbump message templates ... [-- git commit options]`
         – increase template revision and commit. Use ‘-’ to read templates
         from stdin.
 
-     xrevshlib package
+`xrevshlib package`
         – list packages shlib-dependent on package or its subpackages
 
-     xrs pattern
+`xrs pattern`
         – like xbps-query -Rs, but take cwd repo into account
 
-     xsrc pkg
+`xsrc pkg`
         – list source files for XBPS template
 
-     xsubpkg [-m] pkg
+`xsubpkg [-m] pkg`
         – list all subpackages of a package
           -m  only print main package
 
-     xuname
+`xuname`
         – display system info relevant for debugging Void
 
-     xvoidstrap dir [packages]
+`xvoidstrap dir [packages]`
         – bootstrap a new Void installation
 
 DESCRIPTION
