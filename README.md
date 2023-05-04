@@ -1,4 +1,4 @@
-# xtools
+# `xtools`
 
 XTOOLS(1)                   General Commands Manual                  XTOOLS(1)
 
@@ -242,7 +242,7 @@ xwrapper [xbps-src options] [xbps-src target] [name or path to package]
 
 `xwrapper` will `xpunt` given packages, then invoke `xbps-src` with whatever options you gave.
 
-# xxtools
+# `xxtools`
 
 Collection of tools to ease package maintenance for Void Linux even more than
 xtools does.
@@ -256,7 +256,7 @@ xtools does.
 
 [0BSD](https://spdx.org/licenses/0BSD.html), see [LICENSE](./LICENSE).
 
-# `xbps-src` framework
+# `xbps-src framework`
 
 Framework/glue for working with `xbps-src` to bulk build packages from custom and restricted templates.
 You can aggregate templates from multiple sources, updating all of them at once (probably with a `git pull`).
