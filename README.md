@@ -1,4 +1,9 @@
-# `xtools`
+# `xtools Collection`
+ Collection of:
+ - xtools – A collection of small utilities for use with XBPS (https://github.com/leahneukirchen/xtools)
+ - xtools-extra (https://github.com/freddylist/xtools-extra)
+ - xxtools (https://github.com/Piraty/xxtools)
+ - xbps-src framework (https://github.com/freddylist/xbps-src-framework)
 
 ## General Commands Manual
 
