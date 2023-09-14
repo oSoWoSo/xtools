@@ -5,11 +5,9 @@
  - xxtools (https://github.com/Piraty/xxtools)
  - xbps-src framework (https://github.com/freddylist/xbps-src-framework)
 
-## General Commands Manual
+---------------------------------------
 
-### NAME
-
-xtools – A collection of small utilities for use with XBPS
+# `xtools` – A collection of small utilities for use with XBPS
 
 ### COMMANDS
 
