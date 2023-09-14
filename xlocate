@@ -1,5 +1,5 @@
 #!/bin/sh
-# xlocate [-g | -S | PATTERN] - locate files in all XBPS packages
+# xlocate [-g | -S | [-EFGPiw] PATTERN] - locate files in all XBPS packages
 
 : ${XDG_CACHE_HOME:=~/.cache}
 : ${XDG_CONFIG_HOME:=~/.config}
@@ -17,7 +17,7 @@ if command -v git >/dev/null 2>&1; then
 elif command -v chroot-git >/dev/null 2>&1; then
 	GIT_CMD=$(command -v chroot-git)
 else
-	echo "xlocate: git command not found." 1>&2
+	echo "xlocate: git command not found." >&2
 	exit 1
 fi
 
@@ -68,17 +68,29 @@ xsyncgit() {
 	$GIT_CMD -C "$XLOCATE_GIT" fetch -u -f "$XLOCATE_REPO" master:master
 }
 
-case "$1" in
--g)
+usage() {
+	echo "Usage: xlocate [-g | -S | [-EFGPiw] PATTERN]" >&2
+}
+
+while getopts gSEFGPiwh flag; do
+	case $flag in
+		g) UPDATE=1 ;;
+		S) SYNC=1 ;;
+		[EFGPiw]) GREP_FLAGS="$GREP_FLAGS -$flag" ;;
+		h) usage; exit 0 ;;
+		?) usage; exit 1 ;;
+	esac
+done
+
+shift $(( OPTIND - 1 ))
+
+if [ -n "$UPDATE" ]; then
 	xupdategit
-	exit $?;;
--S)
+	exit $?
+elif [ -n "$SYNC" ]; then
 	xsyncgit
-	exit $?;;
-'')
-	echo "Usage: xlocate [-g | -S | PATTERN]" 1>&2
-	exit 1;;
-esac
+	exit $?
+fi
 
 if [ -d "$XLOCATE_GIT" ]; then
 	if [ -f "$XLOCATE_GIT/refs/heads/master" ]; then
@@ -88,14 +100,14 @@ if [ -d "$XLOCATE_GIT" ]; then
 	fi
 	if [ -z "$BASE" ] || find /var/db/xbps/ -name '*repodata' -newer "$BASE" | grep -q .; then
 		if grep -q origin "$XLOCATE_GIT/config"; then
-			echo "xlocate: database outdated, please run xlocate -S." 1>&2
+			echo "xlocate: database outdated, please run xlocate -S." >&2
 		else
-			echo "xlocate: database outdated, please run xlocate -g." 1>&2
+			echo "xlocate: database outdated, please run xlocate -g." >&2
 		fi
 	fi
-	$GIT_CMD -c grep.lineNumber=false -c grep.column=false --git-dir="$XLOCATE_GIT" grep -- "$@" @ |
+	$GIT_CMD -c grep.lineNumber=false -c grep.column=false --git-dir="$XLOCATE_GIT" grep $GREP_FLAGS -- "$@" @ |
 		sed 's/^@://' | $COLUMN | grep .
 else
-	echo "xlocate: database not found, please use xlocate -S." 1>&2
+	echo "xlocate: database not found, please use xlocate -S." >&2
 	exit 1
 fi

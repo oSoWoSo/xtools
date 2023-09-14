@@ -6,7 +6,7 @@
 export LC_ALL=C
 
 scan() {
-	local rx="$1" msg="$(echo $2 | sed 's,/,\\/,g')"
+	local rx="$1" msg="$(printf '%s\n' "$2" | sed 's,/,\\/,g')"
 	grep -P -hn -e "$rx" "$template" |
 		grep -v -P -e "[^:]*:\s*#" |
 		sed "s/^\([^:]*\):\(.*\)/\1: $msg/" |
@@ -400,7 +400,7 @@ for argument; do
 	scan 'short_desc=["'\''][a-z]' "short_desc should start uppercase"
 	scan 'short_desc=["'\''](An?|The) ' "short_desc should not start with an article"
 	scan 'short_desc=["'\''][\t ]' "short_desc should not start with whitespace"
-	scan 'short_desc=["'\''].{73}' "short_desc should be less than 72 chars"
+	scan 'short_desc=["'\''].{74}' "short_desc should be at most 72 chars"
 	scan 'license=.*[^NL]GPL[^-]' "license GPL without version"
 	scan 'license=.*SSPL' "Uses the SSPL license, which is not packageable"
 	scan 'license=.*LGPL[^-]' "license LGPL without version"
@@ -452,8 +452,8 @@ for argument; do
 	scan 'homepage=.*\$' "homepage should not use variables"
 	scan 'maintainer=(?!.*<.*@.*>).*' "maintainer needs email address"
 	scan 'maintainer=.*<.*@users.noreply.github.com>.*' "maintainer needs a valid address for sending mail"
-	scan '^(?!\s*('"$variables"'))[^\s=-]+=' "custom variables should use _ prefix: \\\2" | check_old_vars
-	scan '^[^ =]*=(""|''|)$' "variable set to empty string: \\\2"
+	scan '^(?!\s*('"$variables"'))[^\s=-]+=' "custom variables should use _ prefix: \\2" | check_old_vars
+	scan '^[^ =]*=(""|''|)$' "variable set to empty string: \\2"
 	scan '^(.*)-docs_package().*' 'use <pkgname>-doc subpackage for documentation'
 	scan 'distfiles=.*github.com.*/archive/.*\.zip[\"]?$' 'Use the distfile .tar.gz instead of .zip'
 	scan 'distfiles=.*downloads\.sourceforge\.net' 'use $SOURCEFORGE_SITE'
@@ -492,7 +492,7 @@ for argument; do
 	file_end
 	explain_make_check
 	else
-	echo no such template "$argument" 1>&2
+	echo no such template "$argument" >&2
 	fi | sort -t: -n -k2 -k3 | grep . && ret=1
 done
 exit $ret
