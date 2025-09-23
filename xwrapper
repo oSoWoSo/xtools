@@ -1,0 +1,22 @@
+#!/bin/bash
+#
+# Build by directory instead of by package name.
+
+set -e
+
+XBPS_DISTDIR="$(xdistdir)" || exit 1
+
+# Extract last argument.
+pkg="${*: -1}"
+
+# We probably weren't passed a path to a template,
+# could've been another target (like clean) or a package already in distdir.
+[[ ! -f "${pkg}/template" ]] && { "${XBPS_DISTDIR}/xbps-src" "$@"; exit 1; }
+
+pkgname="$(basename "${pkg}")"
+
+xpunt "${pkg}"
+
+# Remove last argument $@.
+set -- "${@:1:$#-1}"
+"${XBPS_DISTDIR}/xbps-src" "$@" "${pkgname}"
