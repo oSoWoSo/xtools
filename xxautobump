@@ -1,0 +1,70 @@
+#!/bin/sh
+# xxautobump PKG.. - perform trivial updates on given templates
+
+# stdout: list of successfully bumped packages
+# stderr: auxiliary information about the bumping process
+
+: "${XBPS_HOSTDIR:="$HOME/.cache/xxtools/hostdir"}"
+: "${XBPS_MASTERDIR:="$(pwd)/masterdir.xxtools"}"
+
+cd "$(xdistdir)" || exit 1
+
+# ensure all templates exist
+templates=
+fail=
+for pkg; do
+	if [ -f "srcpkgs/$pkg/template" ]; then
+		t="srcpkgs/$pkg/template"
+	elif [ -f "$pkg/template" ]; then
+		t="$pkg/template"
+	elif [ -f "$pkg" ]; then
+		t="$pkg"
+	else
+		printf 'FAIL: no template found for: %s\n' "$pkg" >&2
+		fail=y
+	fi
+	templates="$templates $t"
+done
+[ -n "$templates" ] && [ -z "$fail" ] || exit 1
+
+# prepare env
+export XBPS_MASTERDIR
+export XBPS_HOSTDIR
+./xbps-src binary-bootstrap
+
+# patch templates
+fail=0
+for t in $templates; do
+	pkg="$(printf '%s' "$t" | cut -d/ -f2)"
+	oldversion="$(./xbps-src show "$pkg" | grep version | cut -f2)"
+	oldchecksum="$(./xbps-src show "$pkg" | grep checksum | cut -f2)"
+	newversion="$(./xbps-src update-check "$pkg" | cut -d' ' -f3 | sort -V | tail -n1 | sed "s/${pkg}-//")"
+
+	: "${newversion:="$oldversion"}"
+	if [ "$newversion" = "$oldversion" ] && [ -n "$oldchecksum" ]; then
+		printf 'SKIP: %s (no new version)\n' "$pkg" >&2
+		continue
+	fi
+
+	./xbps-src -C clean "$pkg"
+
+	printf -- 'Updating package: %s %s -> %s' "$pkg" "$oldversion" "$newversion" >&2
+	md5_pre="$(md5sum "$t")"
+	sed -i "$t" \
+		-e "/^revision=/s/=.*/=1/" \
+		-e "/^version=/s/=.*/=$newversion/"
+	md5_post="$(md5sum "$t")"
+
+	if [ "$md5_pre" = "$md5_post" ]; then
+		printf ' FAIL: Template remains unchanged: %s\n' "$pkg" >&2
+	elif ! xgensum -i "$t" >/dev/null 2>&1; then
+		printf ' FAIL: Unable to set new checksum: %s\n' "$pkg" >&2
+	else
+		printf ' OK\n' >&2
+		printf '%s\n' "$pkg"
+		continue
+	fi
+	fail=1
+done
+
+exit $fail

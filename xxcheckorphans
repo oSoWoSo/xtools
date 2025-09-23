@@ -1,0 +1,14 @@
+#!/bin/sh
+# update-check installed packages that no ones looks after
+
+set -eu
+
+cd "$(xdistdir)"
+
+(
+	xpkg
+	grep -lir 'maintainer=.*orphan' srcpkgs | cut -d/ -f2 | sort | uniq
+) | sort | uniq -d >/tmp/pkg.installed.orphans
+
+shuf /tmp/pkg.installed.orphans |
+	parallel -j$(($(nproc) * 2)) './xbps-src update-check {} | sort --version-sort | tail -n1'
